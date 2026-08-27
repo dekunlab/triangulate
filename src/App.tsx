@@ -1,122 +1,145 @@
-import { useState } from 'react'
-import heroImg from './assets/hero.png'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import './App.css'
+import { useEffect, useState } from "react";
+import { studies } from "./data/studies";
+import type { Study } from "./types";
+import "./App.css";
 
-function App() {
-  const [count, setCount] = useState(0)
+type Filters = {
+  query?: string;
+  condition?: string;
+  targetRegion?: string;
+  method?: string;
+  population?: string;
+};
 
-  return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+function filterStudies(list: Study[], filters: Filters): Study[] {
+  const f = {
+    query: (filters.query ?? "").toLowerCase().trim(),
+    condition: (filters.condition ?? "").toLowerCase().trim(),
+    targetRegion: (filters.targetRegion ?? "").toLowerCase().trim(),
+    method: (filters.method ?? "").toLowerCase().trim(),
+    population: (filters.population ?? "").toLowerCase().trim(),
+  };
 
-      <div className="ticks"></div>
-
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+  return list.filter((s) => {
+    if (f.condition && !s.condition.toLowerCase().includes(f.condition)) return false;
+    if (f.targetRegion && !s.targetRegion.toLowerCase().includes(f.targetRegion)) return false;
+    if (f.method && !s.optimizationMethod.toLowerCase().includes(f.method)) return false;
+    if (f.population && !s.population.toLowerCase().includes(f.population)) return false;
+    if (!f.query) return true;
+    const haystack = [s.title, s.condition, s.targetRegion, s.optimizationMethod, ...s.tags]
+      .join(" ")
+      .toLowerCase();
+    return haystack.includes(f.query);
+  });
 }
 
-export default App
+function App() {
+  const [results, setResults] = useState<Study[]>(studies);
+  const [queryBox, setQueryBox] = useState("");
+
+  useEffect(() => {
+    // @ts-expect-error - modelContext isn't in the standard DOM lib types yet
+    if (!document.modelContext) {
+      console.warn("WebMCP (document.modelContext) not available in this browser.");
+      return;
+    }
+
+    // @ts-expect-error - see above
+    document.modelContext.registerTool({
+      name: "search_studies",
+      description:
+        "Search Triangulate's curated dataset of real deep brain stimulation (DBS) programming and optimization studies, by free-text query and/or condition.",
+      inputSchema: {
+        type: "object",
+        properties: {
+          query: {
+            type: "string",
+            description: "Free-text search across title, condition, target region, method, and tags.",
+          },
+          condition: {
+            type: "string",
+            description: "e.g. 'Parkinson's disease', 'Tourette syndrome'.",
+          },
+          targetRegion: {
+            type: "string",
+            description: "e.g. 'STN', 'thalamus', 'directional leads'.",
+          },
+          method: {
+            type: "string",
+            description: "e.g. 'Bayesian optimization', 'sweet spot', 'remote programming'.",
+          },
+          population: {
+            type: "string",
+            description: "e.g. 'randomized', 'Bern', '24 patients'.",
+          },
+        },
+        required: [],
+      },
+      execute: async (input: Filters) => {
+        const filtered = filterStudies(studies, input ?? {});
+        setResults(filtered);
+        return {
+          count: filtered.length,
+          studies: filtered.map((s) => ({
+            id: s.id,
+            title: s.title,
+            year: s.year,
+            condition: s.condition,
+            targetRegion: s.targetRegion,
+            optimizationMethod: s.optimizationMethod,
+            findings: s.findings,
+            url: s.url,
+          })),
+        };
+      },
+    });
+  }, []);
+
+  return (
+    <main className="app">
+      <header>
+        <h1>Triangulate</h1>
+        <p>An agent-native workbench for DBS programming research.</p>
+      </header>
+
+      <section className="search-bar">
+        <input
+          type="text"
+          placeholder="Try: parkinson, bayesian, remote programming, tourette..."
+          value={queryBox}
+          onChange={(e) => {
+            setQueryBox(e.target.value);
+            setResults(filterStudies(studies, { query: e.target.value }));
+          }}
+        />
+      </section>
+
+      <section className="results">
+        <p>{results.length} studies</p>
+        {results.map((s) => (
+          <article key={s.id} className="study-card">
+            <h3>{s.title}</h3>
+            <p className="meta">
+              {s.condition} · {s.targetRegion} · {s.year}
+            </p>
+            <p>{s.findings}</p>
+            <p className="method">
+              <strong>Method:</strong> {s.optimizationMethod}
+            </p>
+            <p>
+              <strong>Population:</strong> {s.population}
+            </p>
+            <p>
+              <strong>Outcome measure:</strong> {s.outcomeMeasure}
+            </p>
+            <a href={s.url} target="_blank" rel="noreferrer">
+              Source ↗
+            </a>
+          </article>
+        ))}
+      </section>
+    </main>
+  );
+}
+
+export default App;
