@@ -33,9 +33,21 @@ function filterStudies(list: Study[], filters: Filters): Study[] {
   });
 }
 
+function groupByTag(list: Study[]): Record<string, Study[]> {
+  const groups: Record<string, Study[]> = {};
+  list.forEach((s) => {
+    s.tags.forEach((tag) => {
+      if (!groups[tag]) groups[tag] = [];
+      groups[tag].push(s);
+    });
+  });
+  return groups;
+}
+
 function App() {
   const [results, setResults] = useState<Study[]>(studies);
   const [queryBox, setQueryBox] = useState("");
+  const [comparison, setComparison] = useState<Study[]>([]);
 
   useEffect(() => {
     // @ts-expect-error - modelContext isn't in the standard DOM lib types yet
@@ -93,6 +105,40 @@ function App() {
         };
       },
     });
+
+    // @ts-expect-error - see above
+    document.modelContext.registerTool({
+      name: "compare_protocols",
+      description:
+        "Compare 2-4 studies from Triangulate's dataset side by side, by their study ids, across target region, method, population, and outcome measure.",
+      inputSchema: {
+        type: "object",
+        properties: {
+          study_ids: {
+            type: "array",
+            items: { type: "string" },
+            description: "2 to 4 study ids to compare, typically from a prior search_studies result.",
+          },
+        },
+        required: ["study_ids"],
+      },
+      execute: async (input: { study_ids: string[] }) => {
+        const ids = input?.study_ids ?? [];
+        const matched = studies.filter((s) => ids.includes(s.id));
+        setComparison(matched);
+        return {
+          count: matched.length,
+          comparison: matched.map((s) => ({
+            id: s.id,
+            title: s.title,
+            targetRegion: s.targetRegion,
+            optimizationMethod: s.optimizationMethod,
+            population: s.population,
+            outcomeMeasure: s.outcomeMeasure,
+          })),
+        };
+      },
+    });
   }, []);
 
   return (
@@ -137,6 +183,51 @@ function App() {
             </a>
           </article>
         ))}
+      </section>
+
+      {comparison.length > 1 && (
+        <section className="comparison">
+          <h2>Comparison</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Study</th>
+                <th>Target</th>
+                <th>Method</th>
+                <th>Population</th>
+                <th>Outcome measure</th>
+              </tr>
+            </thead>
+            <tbody>
+              {comparison.map((s) => (
+                <tr key={s.id}>
+                  <td>{s.title}</td>
+                  <td>{s.targetRegion}</td>
+                  <td>{s.optimizationMethod}</td>
+                  <td>{s.population}</td>
+                  <td>{s.outcomeMeasure}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </section>
+      )}
+
+      <section className="evidence-map">
+        <h2>Evidence Map</h2>
+        <p className="map-hint">Grouped by approach — updates with your last search or comparison.</p>
+        <div className="map-grid">
+          {Object.entries(groupByTag(results)).map(([tag, group]) => (
+            <div key={tag} className="map-column">
+              <h4>{tag} ({group.length})</h4>
+              <ul>
+                {group.map((s) => (
+                  <li key={s.id}>{s.title}</li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
       </section>
     </main>
   );
