@@ -14,3 +14,24 @@ export interface Study {
   findings: string;
   tags: string[];
 }
+
+export interface LiveResult {
+  id: string;
+  title: string;
+  authors: string;
+  journal: string;
+  year: string;
+  url: string;
+}
+
+export interface ResearchPlan {
+  id: string;
+  question: string;
+  candidateMethods: { method: string; rationale: string }[];
+  proposedPopulation: string;
+  proposedOutcomeMeasures: string[];
+  questionSpecificGaps: string[];
+  evidenceGaps: string[];
+  basedOnStudyIds: string[];
+  savedAt?: string;
+}
