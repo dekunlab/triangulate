@@ -95,3 +95,8 @@ header p { color: var(--text-muted); font-size: 0.95rem; margin: 0.15rem 0 0; }
 @media (prefers-reduced-motion: reduce) {
   * { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
 }
+
+.brief-text, .brief-panel, .plan-panel, .comparison, .evidence-map, section h2 {
+  text-align: left !important;
+}
+.brief-text { white-space: pre-wrap; text-indent: 0; }
