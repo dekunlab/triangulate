@@ -5,6 +5,7 @@ import "./App.css";
 
 type Filters = { query?: string; condition?: string; targetRegion?: string; method?: string; population?: string };
 type Tab = "browse" | "compare" | "plan" | "live";
+type Theme = "light" | "dark";
 
 function filterStudies(list: Study[], filters: Filters): Study[] {
   const f = {
@@ -92,10 +93,39 @@ async function searchEuropePMC(query: string, pageSize = 8): Promise<LiveResult[
 function TriangulateMark() {
   return (
     <svg className="mark" viewBox="0 0 40 40" aria-hidden="true">
-      <circle cx="20" cy="10" r="7" fill="#2B4C5C" opacity="0.55" />
-      <circle cx="12" cy="26" r="7" fill="#2B4C5C" opacity="0.55" />
-      <circle cx="28" cy="26" r="7" fill="#2B4C5C" opacity="0.55" />
+      <circle className="mark-c mark-c1" cx="20" cy="10" r="7" />
+      <circle className="mark-c mark-c2" cx="12" cy="26" r="7" />
+      <circle className="mark-c mark-c3" cx="28" cy="26" r="7" />
     </svg>
+  );
+}
+
+function ThemeToggle({ theme, onToggle }: { theme: Theme; onToggle: () => void }) {
+  const isDark = theme === "dark";
+  return (
+    <button
+      type="button"
+      className="theme-toggle"
+      onClick={onToggle}
+      aria-pressed={isDark}
+      aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
+      title={isDark ? "Switch to light mode" : "Switch to dark mode"}
+    >
+      <svg viewBox="0 0 24 24" className={`theme-icon sun${isDark ? "" : " visible"}`} aria-hidden="true">
+        <circle cx="12" cy="12" r="4.5" />
+        <line x1="12" y1="1.5" x2="12" y2="4" />
+        <line x1="12" y1="20" x2="12" y2="22.5" />
+        <line x1="1.5" y1="12" x2="4" y2="12" />
+        <line x1="20" y1="12" x2="22.5" y2="12" />
+        <line x1="4.4" y1="4.4" x2="6.1" y2="6.1" />
+        <line x1="17.9" y1="17.9" x2="19.6" y2="19.6" />
+        <line x1="4.4" y1="19.6" x2="6.1" y2="17.9" />
+        <line x1="17.9" y1="6.1" x2="19.6" y2="4.4" />
+      </svg>
+      <svg viewBox="0 0 24 24" className={`theme-icon moon${isDark ? " visible" : ""}`} aria-hidden="true">
+        <path d="M20 14.6A8.6 8.6 0 1 1 9.4 4a6.9 6.9 0 0 0 10.6 10.6Z" />
+      </svg>
+    </button>
   );
 }
 
@@ -121,6 +151,107 @@ function generateBrief(plan: ResearchPlan, allStudies: Study[]): string {
   return lines.join("\n");
 }
 
+function BriefManuscript({
+  plan,
+  studies: allStudies,
+  copied,
+  generatedAt,
+  onCopy,
+  onDownload,
+}: {
+  plan: ResearchPlan;
+  studies: Study[];
+  copied: boolean;
+  generatedAt: string | null;
+  onCopy: () => void;
+  onDownload: () => void;
+}) {
+  const cited = allStudies.filter((s) => plan.basedOnStudyIds.includes(s.id));
+  const populationSpecified = !plan.proposedPopulation.startsWith("Not specified");
+
+  return (
+    <section className="brief-panel">
+      <div className="brief-head">
+        <p className="brief-kicker">Research brief</p>
+        <h2>{plan.question || "Untitled question"}</h2>
+      </div>
+
+      <div className="brief-section">
+        <h3>Candidate methods</h3>
+        {plan.candidateMethods.length ? (
+          <ul className="brief-methods">
+            {plan.candidateMethods.map((m, i) => (
+              <li key={i}>
+                <span className="method-name">{m.method}</span>
+                <span className="method-rationale">{m.rationale}</span>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="brief-empty">No distinct methodology reported across the selected studies.</p>
+        )}
+      </div>
+
+      <div className="brief-section">
+        <h3>Proposed population</h3>
+        <blockquote className={`brief-quote${populationSpecified ? "" : " muted"}`}>
+          {plan.proposedPopulation}
+        </blockquote>
+      </div>
+
+      <div className="brief-section">
+        <h3>Proposed outcome measures</h3>
+        {plan.proposedOutcomeMeasures.length ? (
+          <ul className="brief-plain-list">
+            {plan.proposedOutcomeMeasures.map((o, i) => <li key={i}>{o}</li>)}
+          </ul>
+        ) : (
+          <p className="brief-empty">No outcome measures reported across the selected studies.</p>
+        )}
+      </div>
+
+      {plan.questionSpecificGaps.length > 0 && (
+        <div className="brief-callout">
+          <h3>About your question</h3>
+          <ul>{plan.questionSpecificGaps.map((g, i) => <li key={i}>{g}</li>)}</ul>
+        </div>
+      )}
+
+      <div className="brief-section">
+        <h3>Other evidence gaps</h3>
+        {plan.evidenceGaps.length ? (
+          <ul className="brief-plain-list muted-list">
+            {plan.evidenceGaps.map((g, i) => <li key={i}>{g}</li>)}
+          </ul>
+        ) : (
+          <p className="brief-empty">No additional evidence gaps identified.</p>
+        )}
+      </div>
+
+      <div className="brief-section">
+        <h3>Cited studies ({cited.length})</h3>
+        <ol className="brief-bibliography">
+          {cited.map((s) => (
+            <li key={s.id}>
+              <span className="citation-text">
+                {s.title} <span className="citation-meta">({s.year}), {s.source}.</span>
+              </span>
+              <a href={s.url} target="_blank" rel="noreferrer">Source ↗</a>
+            </li>
+          ))}
+        </ol>
+      </div>
+
+      <div className="brief-footer">
+        <span className="brief-date">{generatedAt ? `Generated ${generatedAt}` : ""}</span>
+        <div className="brief-actions">
+          <button onClick={onCopy}>{copied ? "Copied" : "Copy"}</button>
+          <button onClick={onDownload}>Download .md</button>
+        </div>
+      </div>
+    </section>
+  );
+}
 
 function normalizePlan(p: any): ResearchPlan {
   return {
@@ -146,6 +277,11 @@ function downloadBrief(text: string) {
   URL.revokeObjectURL(url);
 }
 
+function getInitialTheme(): Theme {
+  if (typeof document === "undefined") return "light";
+  return document.documentElement.getAttribute("data-theme") === "dark" ? "dark" : "light";
+}
+
 function App() {
   const [results, setResults] = useState<Study[]>(studies);
   const [queryBox, setQueryBox] = useState("");
@@ -158,12 +294,16 @@ function App() {
     setSavedPlansState(plans);
   };
   const [currentBrief, setCurrentBrief] = useState<string | null>(null);
+  const [briefSourcePlan, setBriefSourcePlan] = useState<ResearchPlan | null>(null);
+  const [briefGeneratedAt, setBriefGeneratedAt] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
   const [activeTab, setActiveTab] = useState<Tab>("browse");
   const [toast, setToast] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [manualQuestion, setManualQuestion] = useState("");
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   const [showMap, setShowMap] = useState(false);
+  const [theme, setTheme] = useState<Theme>(getInitialTheme);
 
   const [currentPlan, setCurrentPlanState] = useState<ResearchPlan | null>(null);
   const currentPlanRef = useRef<ResearchPlan | null>(null);
@@ -220,6 +360,8 @@ function App() {
     if (!plan) { showToast("No plan open to generate a brief from"); return null; }
     const brief = generateBrief(plan, studies);
     setCurrentBrief(brief);
+    setBriefSourcePlan(plan);
+    setBriefGeneratedAt(new Date().toISOString().slice(0, 10));
     showToast("generate_research_brief created a brief");
     return brief;
   };
@@ -240,6 +382,20 @@ function App() {
   useEffect(() => {
     try { setSavedPlans(JSON.parse(localStorage.getItem("triangulate_plans") ?? "[]").map(normalizePlan)); } catch { setSavedPlans([]); }
   }, []);
+
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", theme);
+    localStorage.setItem("triangulate_theme", theme);
+  }, [theme]);
+
+  const toggleTheme = () => setTheme((t) => (t === "dark" ? "light" : "dark"));
+
+  const handleCopyBrief = () => {
+    if (!currentBrief) return;
+    navigator.clipboard.writeText(currentBrief);
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 1600);
+  };
 
   useEffect(() => {
     // @ts-expect-error
@@ -349,9 +505,10 @@ function App() {
           <h1>Triangulate</h1>
           <p>An agent-native workbench for DBS programming research.</p>
         </div>
+        <ThemeToggle theme={theme} onToggle={toggleTheme} />
       </header>
 
-      {toast && <div className="toast">{toast}</div>}
+      {toast && <div className="toast" role="status" aria-live="polite">{toast}</div>}
 
       <nav className="tabs">
         <button className={activeTab === "browse" ? "active" : ""} onClick={() => setActiveTab("browse")}>Browse ({results.length})</button>
@@ -376,17 +533,18 @@ function App() {
                   <div className="card-body">
                     <h3 className="card-title" onClick={() => toggleExpand(s.id)}>{s.title}</h3>
                     <p className="meta">{s.condition} · {s.targetRegion} · {s.year}</p>
-                    {isOpen ? (
-                      <>
+                    <div className={`details-wrap${isOpen ? " open" : ""}`}>
+                      <div className="details-inner">
                         <p>{s.findings}</p>
                         <p><span className="field-label">Method </span>{s.optimizationMethod}</p>
                         <p><span className="field-label">Population </span>{s.population}</p>
                         <p><span className="field-label">Outcome </span>{s.outcomeMeasure}</p>
                         <a href={s.url} target="_blank" rel="noreferrer">Source ↗</a>
-                      </>
-                    ) : (
-                      <button className="expand-btn" onClick={() => toggleExpand(s.id)}>Show details</button>
-                    )}
+                      </div>
+                    </div>
+                    <button className="expand-btn" onClick={() => toggleExpand(s.id)} aria-expanded={isOpen}>
+                      {isOpen ? "Hide details" : "Show details"}
+                    </button>
                   </div>
                 </article>
               );
@@ -423,7 +581,13 @@ function App() {
             <table>
               <thead><tr><th>Study</th><th>Target</th><th>Method</th><th>Population</th><th>Outcome</th></tr></thead>
               <tbody>{comparison.map((s) => (
-                <tr key={s.id}><td>{s.title}</td><td>{s.targetRegion}</td><td>{s.optimizationMethod}</td><td>{s.population}</td><td>{s.outcomeMeasure}</td></tr>
+                <tr key={s.id}>
+                  <td data-label="Study">{s.title}</td>
+                  <td data-label="Target">{s.targetRegion}</td>
+                  <td data-label="Method">{s.optimizationMethod}</td>
+                  <td data-label="Population">{s.population}</td>
+                  <td data-label="Outcome">{s.outcomeMeasure}</td>
+                </tr>
               ))}</tbody>
             </table>
           )}
@@ -463,15 +627,15 @@ function App() {
               </button>
             </section>
 
-                        {currentBrief && (
-              <section className="brief-panel">
-                <h2>Research Brief</h2>
-                <pre className="brief-text">{currentBrief}</pre>
-                <div className="brief-actions">
-                  <button onClick={() => navigator.clipboard.writeText(currentBrief)}>Copy</button>
-                  <button onClick={() => downloadBrief(currentBrief)}>Download .md</button>
-                </div>
-              </section>
+                        {currentBrief && briefSourcePlan && (
+              <BriefManuscript
+                plan={briefSourcePlan}
+                studies={studies}
+                copied={copied}
+                generatedAt={briefGeneratedAt}
+                onCopy={handleCopyBrief}
+                onDownload={() => downloadBrief(currentBrief)}
+              />
             )}
             </>
           ) : (
