@@ -337,7 +337,8 @@ function App() {
   const runBuildPlan = (question: string, ids: string[]) => {
     const selected = studies.filter((s) => ids.includes(s.id));
     const plan = buildPlanFromStudies(question, selected, studies);
-    setCurrentPlan(plan);
+        setCurrentPlan(plan);
+    setCurrentBrief(null);
     setActiveTab("plan");
     showToast(`build_research_plan drafted a plan from ${selected.length} studies`);
     return plan;
@@ -429,7 +430,7 @@ function App() {
     document.modelContext.registerTool({
       name: "compare_protocols",
       description: "Compare 2-4 studies from Triangulate's dataset side by side, by their study ids, across target region, method, population, and outcome measure.",
-      inputSchema: { type: "object", properties: { study_ids: { type: "array", items: { type: "string" }, description: "2 to 4 study ids to compare." } }, required: ["study_ids"] },
+      inputSchema: { type: "object", properties: { study_ids: { type: "array", items: { type: "string" }, minItems: 2, maxItems: 4, description: "2 to 4 study ids to compare." } }, required: ["study_ids"] },
       execute: async (input: { study_ids: string[] }) => {
         const matched = runCompare(input?.study_ids ?? []);
         return { count: matched.length, comparison: matched.map((s) => ({ id: s.id, title: s.title, targetRegion: s.targetRegion, optimizationMethod: s.optimizationMethod, population: s.population, outcomeMeasure: s.outcomeMeasure })) };
@@ -646,10 +647,10 @@ function App() {
             <section className="saved-plans">
               <h3>Saved Plans ({savedPlans.length})</h3>
               <ul>{savedPlans.map((p) => (
-                <li key={p.id}><button onClick={() => setCurrentPlan(p)}>{p.question || "(untitled)"} — saved {p.savedAt?.slice(0, 10)}</button></li>
+                                <li key={p.id}><button onClick={() => { setCurrentPlan(p); setCurrentBrief(null); }}>{p.question || "(untitled)"} — saved {p.savedAt?.slice(0, 10)}</button></li>
               ))}</ul>
             </section>
-          )}
+          )}w
         </div>
       )}
 
