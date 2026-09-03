@@ -1,10 +1,21 @@
+export type StudyStatus =
+  | "Published"
+  | "Ongoing"
+  | "Completed"
+  | "Recruiting"
+  | "Not recruiting";
+
 export interface Study {
   id: string;
   title: string;
   year: number | string;
+  onlinePublicationYear?: number;
+  status?: StudyStatus;
+
   source: string;
   identifier: string;
   url: string;
+
   targetRegion: string;
   condition: string;
   population: string;
@@ -27,7 +38,10 @@ export interface LiveResult {
 export interface ResearchPlan {
   id: string;
   question: string;
-  candidateMethods: { method: string; rationale: string }[];
+  candidateMethods: {
+    method: string;
+    rationale: string;
+  }[];
   proposedPopulation: string;
   proposedOutcomeMeasures: string[];
   questionSpecificGaps: string[];

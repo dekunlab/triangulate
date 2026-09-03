@@ -3,10 +3,10 @@
 > Where researchers and their AI agents triangulate real DBS research evidence together.
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
-![React](https://img.shields.io/badge/React-19.2.8-61DAFB.svg)
+![React](https://img.shields.io/badge/React-18-61DAFB.svg)
 ![WebMCP](https://img.shields.io/badge/Built%20with-WebMCP-2B4C5C.svg)
 
-**[Live app](https://triangulate-dbs.netlify.app/) · [Demo video](https://youtu.be/RK4ChEdxIRE?si=_iLw6vNaPHfC37VG) · Built for [The WebMCP Challenge](https://webmcp.devpost.com)**
+**[Live app](https://triangulate-dbs.netlify.app/) · [Demo video](#) · Built for [The WebMCP Challenge](https://webmcp.devpost.com)**
 
 **Research use only.** Triangulate does not provide patient-specific clinical advice, determine DBS stimulation settings, or control implanted devices. It's a literature research and planning tool for researchers.
 
@@ -100,7 +100,7 @@ npm install
 npm run dev
 ```
 
-In Chrome 149+, enable `chrome://flags/#enable-webmcp-testing`, relaunch, and open the dev URL.
+In Chrome, enable `chrome://flags/#enable-webmcp-testing`, relaunch, open the dev URL.
 
 No backend. The dataset ships with the app; Europe PMC's API takes direct browser requests.
 
@@ -119,7 +119,7 @@ No backend. The dataset ships with the app; Europe PMC's API takes direct browse
 11. *Programming of Subthalamic Nucleus Deep Brain Stimulation for Parkinson's Disease With Sweet Spot-Guided Parameter Suggestions* (2022). Frontiers in Human Neuroscience. https://www.ncbi.nlm.nih.gov/pmc/articles/PMC9663652/
 12. *Probabilistic Subthalamic Nucleus Stimulation Sweet Spot Integration Into a Commercial DBS Programming Software* (2022). Neuromodulation. https://pubmed.ncbi.nlm.nih.gov/35088739/
 13. *Programming Deep Brain Stimulation for Parkinson's Disease: The Toronto Western Hospital Algorithms* (2016). Brain Stimulation. https://pubmed.ncbi.nlm.nih.gov/34819915/
-14. *Automated Deep Brain Stimulation Programming With Safety Constraints for Tremor Suppression in Patients With Parkinson's Disease and Essential Tremor* (2022). Journal of Neural Engineering, 19(4). PMID 35921806, DOI 10.1088/1741-2552/ac86a2.
+14. *Automated Deep Brain Stimulation Programming With Safety Constraints for Tremor Suppression in Parkinson's Disease and Essential Tremor* (2022). Journal of Neural Engineering. <https://pubmed.ncbi.nlm.nih.gov/35921806/>
 
 ## Limitations, stated plainly
 
