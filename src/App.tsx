@@ -650,7 +650,7 @@ function App() {
                                 <li key={p.id}><button onClick={() => { setCurrentPlan(p); setCurrentBrief(null); }}>{p.question || "(untitled)"} — saved {p.savedAt?.slice(0, 10)}</button></li>
               ))}</ul>
             </section>
-          )}w
+          )}
         </div>
       )}
 
