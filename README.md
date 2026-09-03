@@ -6,46 +6,56 @@
 ![React](https://img.shields.io/badge/React-18-61DAFB.svg)
 ![WebMCP](https://img.shields.io/badge/Built%20with-WebMCP-2B4C5C.svg)
 
-Triangulate is a research workbench for deep brain stimulation (DBS) programming — the process of tuning an implanted stimulator's settings after surgery. It has no standard method, and a researcher, or their AI agent, can search a curated set of 14 verified studies, compare optimization approaches side by side, draft a structured plan from a question, and export a cited brief. A separate tool reaches live into Europe PMC for anything the curated set doesn't cover. Built for [The WebMCP Challenge](https://webmcp.devpost.com).
+**[Live app](https://triangulate-dbs.netlify.app/) · [Demo video](#) · Built for [The WebMCP Challenge](https://webmcp.devpost.com)**
 
-## The problem, in numbers
+**Research use only.** Triangulate does not provide patient-specific clinical advice, determine DBS stimulation settings, or control implanted devices. It's a literature research and planning tool for researchers.
+
+![Triangulate — Browse tab](./screenshots/01-browse.png)
+
+## What is DBS programming, and why does it need this?
+
+Deep brain stimulation (DBS) is a treatment where a surgically implanted device sends electrical pulses to specific brain regions, used for conditions like Parkinson's disease and essential tremor. After the implant surgery, a clinician has to *program* it — choosing which electrode contacts fire, at what strength and frequency, out of a huge combination of possible settings — to control symptoms without side effects. Today that tuning is done almost entirely by trial and error in repeated clinic visits, and there's no standard method for it.
 
 - Patients average **6.9 programming visits in year one**, dropping to **2.8/year** after — for a device implanted for a decade or more.
 - Over half need a repeat hardware surgery.
-- *(Source: a 1,849-patient Australian cohort, [full citation below](#curated-evidence-base).)*
+- *(Source: a 1,849-patient Australian cohort — [full citation below](#curated-evidence-base).)*
 
-The methods trying to fix this — image-guided algorithms out of Charité Berlin, sweet-spot mapping from Bern's ARTORG Center, sensor-guided approaches, the foundational Toronto Western protocol — are real, published, and scattered across a dozen-plus papers nobody has unified into one tool.
+The research trying to fix this is real and published — image-guided algorithms out of Charité Berlin, sweet-spot mapping from Bern's ARTORG Center, sensor-guided approaches, the foundational Toronto Western protocol that's still the baseline everyone measures against — but it's scattered across a dozen-plus papers nobody has unified into one searchable place.
 
-## What it does
+## What Triangulate does
 
-- **Search** the curated dataset by free text, condition, target region, method, or population.
+A researcher, or their AI agent using the same tools, can:
+
+- **Search** 14 curated studies by free text, condition, target region, method, or population.
 - **Compare** 2–4 studies side by side.
-- **Build a plan** from a question and a set of studies: candidate methods with rationale, proposed population, proposed outcome measures, and evidence gaps — including gaps specific to the exact wording of the question.
+- **Build a research plan** from a question and a set of studies: candidate methods with rationale, proposed population, proposed outcome measures, and evidence gaps — including gaps specific to the exact wording of the question.
 - **Save** a plan so it survives a reload.
-- **Generate a brief** — copyable, downloadable, fully cited markdown.
-- **Search live literature** beyond the curated set, via Europe PMC, labeled unreviewed and never silently merged with vetted results.
+- **Generate a brief** — copyable, downloadable, cited markdown.
+- **Search live literature** beyond the curated set via Europe PMC, clearly labeled unreviewed, never silently merged with vetted results.
 
-Every one of these runs through a human clicking the interface, or an agent calling the matching tool — same underlying function either way.
+![Triangulate — a built research plan, with a question-specific evidence gap flagged](./screenshots/02-plan.png)
 
-## Verified run
+## Why WebMCP
 
-A real `build_research_plan` call, question `"does this work for tremor patients"`, against three selected studies:
+A traditional research site assumes a human operates every control by hand. Triangulate exposes those same operations as browser-native WebMCP tools via `document.modelContext.registerTool()`, so an AI agent can search evidence, compare studies, build a plan, and generate a brief — no separate backend integration, no scraping a UI never built for it. The human and the agent act on the same application state through the same functions: `runSearch`, `runCompare`, `runBuildPlan`, `runSave`, `runGenerateBrief`. A study id returned by `search_studies` is exactly what `compare_protocols` and `build_research_plan` expect as input — the tools compose by design, not by coincidence.
+
+## Verified — straight from the browser, not a claim
+
+```js
+document.modelContext.getTools().then(tools => console.log(tools.map(t => t.name)));
+// → ["build_research_plan", "compare_protocols", "generate_research_brief",
+//    "save_to_workspace", "search_literature", "search_studies"]
+```
+
+And a real `build_research_plan` call, question `"does this work for tremor patients"`, against three selected studies — the question is checked against the dataset's real tag vocabulary at call time, which is why a *different* question against the *same* studies produces a *different* gap list:
 
 ```json
 {
-  "question": "does this work for tremor patients",
-  "candidateMethods": [
-    { "method": "StimFit — image-guided algorithm...", "rationale": "Supported by: Automated DBS Programming Based on Electrode Location..." },
-    { "method": "Sweet-spot-guided algorithm using Lead-DBS reconstruction...", "rationale": "Supported by: Programming of STN DBS With Sweet Spot-Guided..." },
-    { "method": "Bayesian optimization — real-time smartwatch tremor measurement...", "rationale": "Supported by: Automated DBS Programming With Safety Constraints..." }
-  ],
   "questionSpecificGaps": [
     "Your question mentions \"tremor\", but none of the selected studies cover it."
   ]
 }
 ```
-
-The word "tremor" in the question is checked against the real tag vocabulary of the dataset at call time — this isn't a canned response, it's why a *different* question against the *same* three studies produces a different gap list.
 
 ## Architecture
 
@@ -57,9 +67,9 @@ flowchart TB
     end
 
     Human["Researcher"] -->|clicks / types| UI
-    Agent["AI Agent<br/>(e.g. ChatGPT in-app browser)"] -->|calls tools| MCP
+    Agent["AI Agent<br/>(e.g. ChatGPT desktop browser)"] -->|calls tools| MCP
 
-    MCP -->|search_studies| Curated[("Curated dataset<br/>14 verified studies")]
+    MCP -->|search_studies| Curated[("Curated dataset<br/>14 studies")]
     MCP -->|search_literature| PMC[("Europe PMC API<br/>live, unreviewed")]
     MCP --> Shared["Shared logic:<br/>runCompare / runBuildPlan /<br/>runSave / runGenerateBrief"]
     Shared --> State["React state + localStorage"]
@@ -67,8 +77,6 @@ flowchart TB
     UI <--> MCP
     State --> UI
 ```
-
-The manual UI buttons and the WebMCP tools call the same functions. Comparing a study by clicking a checkbox and comparing it by asking an agent run through identical code — not two implementations of the same feature.
 
 ## The six tools
 
@@ -81,6 +89,8 @@ The manual UI buttons and the WebMCP tools call the same functions. Comparing a 
 | `generate_research_brief` | Plan → cited, exportable markdown |
 | `search_literature` | Live Europe PMC search beyond the curated set, labeled unreviewed |
 
+![Triangulate — side-by-side study comparison](./screenshots/03-compare.png)
+
 ## Run it locally
 
 ```bash
@@ -90,7 +100,7 @@ npm install
 npm run dev
 ```
 
-In Chrome 146+: enable `chrome://flags/#enable-webmcp-testing`, relaunch, open the dev URL. Optional for manual tool testing: install [WebMCP Inspector](https://chromewebstore.google.com/detail/webmcp-inspector/edfjnadfiapmddgplgnphlflgafmcino).
+In Chrome, enable `chrome://flags/#enable-webmcp-testing`, relaunch, open the dev URL.
 
 No backend. The dataset ships with the app; Europe PMC's API takes direct browser requests.
 
@@ -109,7 +119,7 @@ No backend. The dataset ships with the app; Europe PMC's API takes direct browse
 11. *Programming of Subthalamic Nucleus Deep Brain Stimulation for Parkinson's Disease With Sweet Spot-Guided Parameter Suggestions* (2022). Frontiers in Human Neuroscience. https://www.ncbi.nlm.nih.gov/pmc/articles/PMC9663652/
 12. *Probabilistic Subthalamic Nucleus Stimulation Sweet Spot Integration Into a Commercial DBS Programming Software* (2022). Neuromodulation. https://pubmed.ncbi.nlm.nih.gov/35088739/
 13. *Programming Deep Brain Stimulation for Parkinson's Disease: The Toronto Western Hospital Algorithms* (2016). Brain Stimulation. https://pubmed.ncbi.nlm.nih.gov/34819915/
-14. *Automated Deep Brain Stimulation Programming With Safety Constraints for Tremor Suppression in Parkinson's Disease and Essential Tremor* (2023).
+14. *Automated Deep Brain Stimulation Programming With Safety Constraints for Tremor Suppression in Patients With Parkinson's Disease and Essential Tremor* (2022). Journal of Neural Engineering, 19(4). PMID 35921806, DOI 10.1088/1741-2552/ac86a2.
 
 ## Limitations, stated plainly
 
